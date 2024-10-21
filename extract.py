@@ -51,7 +51,7 @@ def extractData():
     dir_drug = getDir('drug200.csv')
     data_drug = open(dir_drug, encoding='utf8')
     data_drug = extractCSV(data_drug) # pop filter from last to 1st
-    data_drug = sorted([dict(t) for t in {tuple(d.items()) for d in data_drug}], key=lambda d: (d['Age'], d['Cholesterol'])) # remove duplicates
+    data_drug = sorted([dict(t) for t in {tuple(d.items()) for d in data_drug}], key=lambda d: (d['Age'], d['Na_to_K'])) # remove duplicates
     #for i in data_drug:
     #    print(i)
     print('Number of drug: ', len(data_drug))
