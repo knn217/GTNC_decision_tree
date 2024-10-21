@@ -1,3 +1,6 @@
-from extract import extractData
+from extract import extractData, transpose
+from decision_tree import extractBranch
 
-print(extractData())
+data = extractData()
+data_t = transpose(data)
+print(extractBranch(data_t[2]))
