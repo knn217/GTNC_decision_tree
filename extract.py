@@ -52,8 +52,6 @@ def extractData():
     #    print(i)
     print('Number of drug: ', len(data_drug))
     saveToTxt(data_drug, 'log/drug.txt') # save to log
-
-    inputs = data_drug
     
     #print(transpose(data_drug))
     
