@@ -14,5 +14,8 @@ output = data_t[-1]
 tree = dt.DTree(data)
 rows = list(range(0, len(data)))
 cols = list(range(0, len(data[0])))
-print(tree.getEntropies(rows, cols, seg=5))
-print(tree.calculateSegment())
+#cols = [-1]
+print(tree.getEntropies(rows, cols))
+print(tree.balanceSegment())
+print(tree.getEntropies(rows, cols))
+tree.train(rows, cols[:-1])
