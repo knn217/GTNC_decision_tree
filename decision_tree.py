@@ -156,7 +156,7 @@ class DTreeNode:
         return
     
     def logInfo(self, line_break = '\n', indent=''):
-        log = ''
+        log = indent + '=======================' + line_break
         log += indent + 'rows:' + str(self.rows) + line_break
         log += indent + 'col:' + str(self.col) + line_break
         log += indent + 'type:' + str(self.type) + line_break
