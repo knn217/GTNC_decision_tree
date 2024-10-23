@@ -92,6 +92,8 @@ def percentage(attr, attr_branches, type='discrete'):
     # output: [0.45454545454545453, 0.36363636363636365, 0.18181818181818182]
     p_list = countBranchInstance(attr, attr_branches, type)
     s = sum(p_list)
+    if s == 0:
+        return [0]
     p_list = [i / s for i in p_list]
     return p_list
 
@@ -144,7 +146,7 @@ class DTreeNode:
         DTreeNode.count += 1
         return
     
-    def update(self, col=0, type='discrete', conditions = []):
+    def update(self, col=0, type='discrete', conditions=[]):
         self.col = col   # attr(column) index in the dataset
         self.type = type # discrete or continuous
         self.conditions = conditions
@@ -181,6 +183,7 @@ class DTree:
         self.dataset = dataset # rows
         self.dataset_t = transpose(dataset) # columns
         self.dataset_output = self.dataset_t[-1]
+        self.dataset_output_idx = len(self.dataset_t)
         self.root_node = None
         self.seg = [1] * len(self.dataset_t)
         self.conditions = [convertBranch(extractBranch(self.dataset_t[i]), self.seg[i]) for i in range(len(self.dataset_t))]
@@ -237,17 +240,15 @@ class DTree:
     
     # recursive train
     def train(self, rows, input_cols, node = None):
-        tmp_cond = [self.conditions[i] for i in input_cols]
-        tmp_type = [self.datatype[i] for i in input_cols]
-        #print('tmp_data:', tmp_data)
-        #print('tmp_cond:', tmp_cond)
-        #print('tmp_type:', tmp_type)
-        
-        # base cases
-        if len(input_cols) == 1: # if there's only one column then pick that column
-            node.update(input_cols[0], tmp_type[0], tmp_cond[0])
-            return
         tmp_output = extractIndx(self.dataset_output, rows)
+        # base cases
+        if len(input_cols) == 0: # if there's only no input column then output column as node's condition
+            if len(tmp_output) == 0:
+                node = None
+                return
+            result = max(tmp_output,key=tmp_output.count)
+            node.update(self.dataset_output_idx, type='result', conditions=result)
+            return
         out_cond = self.conditions[-1]
         #print('out_cond: ', out_cond)
         out_entr = entropy(tmp_output, out_cond)
@@ -267,17 +268,24 @@ class DTree:
         # this is equivalent to minimizing attribute (column) entropy
         # => we pick the smallest col_entr in the list
         #=======================================
+        tmp_cond = [self.conditions[i] for i in input_cols]
+        tmp_type = [self.datatype[i] for i in input_cols]
+        #print('tmp_data:', tmp_data)
+        #print('tmp_cond:', tmp_cond)
+        #print('tmp_type:', tmp_type)
+        
         min_entr_col_indx = col_entropies.index(min(col_entropies))
-        node.update(input_cols[min_entr_col_indx], tmp_type[min_entr_col_indx], tmp_cond[min_entr_col_indx])
+        node.update(input_cols[min_entr_col_indx], type=tmp_type[min_entr_col_indx], conditions=tmp_cond[min_entr_col_indx])
 
         print('min_entr_col_indx:', min_entr_col_indx)
         print('old_input_cols: ',input_cols)
-        input_cols.remove(input_cols[min_entr_col_indx])
-        print('new_input_cols: ',input_cols)
+        new_input_cols = [i for i in input_cols if i != input_cols[min_entr_col_indx]]
+        #input_cols.remove(input_cols[min_entr_col_indx])
+        print('new_input_cols: ',new_input_cols)
         for i in L_L_Idx[min_entr_col_indx]: # get each branch's rows 
             child = DTreeNode(i) # add rows to child node
             node.children.append(child)   # add child node to current node
-            self.train(i, input_cols, child)
+            self.train(i, new_input_cols, child)
             #print(i)
         return
         
