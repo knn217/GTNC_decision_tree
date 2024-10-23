@@ -74,7 +74,7 @@ def countBranchInstance(attr, attr_branches, type='discrete'):
     # input: ([1, 2, 6, 0, 2, 4, 8, 1, 4, 7, 3], {float('-inf'), 2, 6, float('inf')}, type = 'continuous')
     # output: [5, 4, 2]
     branch_list = attrBranchDivider(attr, attr_branches, type)
-    print('=============================================================')
+    #print('=============================================================')
     #print('attr:', attr)
     #print('attr_branches', attr_branches)
     #print(branch_list)
@@ -174,15 +174,13 @@ class DTreeNode:
             log += child.log(line_break, indent + '    ')
         return log
         
-    def discreteBranch(self, record):
-        value = record[self.col]
+    def discreteBranch(self, value):
         for i in range(len(self.conditions)):
             if self.conditions[i] == value:
                 return self.children[i]
         return None
     
-    def continuousBranch(self, record):
-        value = record[self.col]
+    def continuousBranch(self, value):
         for i in range(len(self.conditions)-1):
             if self.conditions[i] < value and value < self.conditions[i+1]:
                 return self.children[i]
@@ -237,8 +235,9 @@ class DTree:
         #print(branch_num_list)
         self.seg = len(self.dataset)
         c_attr = 0
-        for i in branch_num_list:
-            if i != 0: self.seg /= i
+        print(branch_num_list)
+        for i in range(len(branch_num_list)-1):
+            if branch_num_list[i] != 0: self.seg /= branch_num_list[i]
             else: c_attr += 1 
         balance_seg = math.ceil(self.seg ** (1/c_attr))
         self.seg = [balance_seg if i==0 else i for i in branch_num_list]
@@ -258,6 +257,18 @@ class DTree:
         L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type = tmp_type[i]) for i in range(len(tmp_data))]
         return L_L_Idx
     
+    def postProccessChildren(self, node):
+        max_occur = -1
+        max_occur_result = ''
+        for child in node.children:
+            if len(child.rows) > max_occur and isinstance(child.conditions, str):
+                max_occur == len(child.rows)
+                max_occur_result = child.conditions
+        for child in node.children:
+            if len(child.rows) == 0:
+                child.conditions = max_occur_result
+        return
+    
     # recursive train
     def train(self, rows, input_cols, node = None):
         tmp_output = extractIndx(self.dataset_output, rows)
@@ -274,15 +285,15 @@ class DTree:
         out_entr = entropy(tmp_output, out_cond)
         if out_entr == 0:
             return
-        print('out_entr: ', out_entr)
+        #print('out_entr: ', out_entr)
         if node == None:
             node = DTreeNode(rows)
             self.root_node = node        
         # create the list of list of indexes for each branch
         L_L_Idx = self.L_L_Idx(rows, input_cols)
-        print('L_L_Idx: ', L_L_Idx)
+        #print('L_L_Idx: ', L_L_Idx)
         col_entropies = [sum([entropy(extractIndx(self.dataset_output, each_attr_idx[i]), out_cond) for i in range(len(each_attr_idx))]) for each_attr_idx in L_L_Idx]
-        print('col_entropies: ', col_entropies)
+        #print('col_entropies: ', col_entropies)
         #=======================================
         # Since DTrees want to maximize information gain (output entr - attribute entr)
         # this is equivalent to minimizing attribute (column) entropy
@@ -297,19 +308,29 @@ class DTree:
         min_entr_col_indx = col_entropies.index(min(col_entropies))
         node.update(input_cols[min_entr_col_indx], type=tmp_type[min_entr_col_indx], conditions=tmp_cond[min_entr_col_indx])
 
-        print('min_entr_col_indx:', min_entr_col_indx)
-        print('old_input_cols: ',input_cols)
+        #print('min_entr_col_indx:', min_entr_col_indx)
+        #print('old_input_cols: ',input_cols)
         new_input_cols = [i for i in input_cols if i != input_cols[min_entr_col_indx]]
         #input_cols.remove(input_cols[min_entr_col_indx])
-        print('new_input_cols: ',new_input_cols)
+        #print('new_input_cols: ',new_input_cols)
         for i in L_L_Idx[min_entr_col_indx]: # get each branch's rows 
             child = DTreeNode(i) # add rows to child node
             node.children.append(child)   # add child node to current node
+            #print('rows',i)
+            if len(i) == 0:
+                print('tmp_output: ', tmp_output)
+                result = max(tmp_output,key=tmp_output.count)
+                print('result: ', result)
+                child.update(self.dataset_output_idx, type='result', conditions=result)
+                continue
             self.train(i, new_input_cols, child)
             #print(i)
+        # post proccess
+        self.postProccessChildren(node)
         return
         
     def query(self, record):
         node = self.root_node
-        
-        return
+        while node.type != 'result':
+            node = node.branch(record)
+        return node.conditions
