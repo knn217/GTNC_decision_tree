@@ -45,7 +45,7 @@ def extractCSV(txt, filter=[]):
     return data[1:]
 
 def extractData():
-    dir_drug = getDir('drug200.csv')
+    dir_drug = getDir('data.csv')
     data_drug = open(dir_drug, encoding='utf8')
     data_drug = extractCSV(data_drug) # pop filter from last to 1st
     #for i in data_drug:
