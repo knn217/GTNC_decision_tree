@@ -6,8 +6,8 @@ def extractBranch(attr):
     # example: 
     # input: ([3, 4, 7, 6, 9, 4, 4, 2, 3], 4)
     # output: {2, 3, 4, 6, 7, 9}
-    branches = set(attr)
-    return list(branches)
+    branches = sorted(list(set(attr)))
+    return branches
 
 def convertBranch(continuous_branch, seg=1):
     # turn continuous to discrete branches of range (for int and float)
@@ -161,7 +161,7 @@ class DTreeNode:
         log += indent + 'col:' + str(self.col) + line_break
         log += indent + 'type:' + str(self.type) + line_break
         log += indent + 'conditions:' + str(self.conditions) + line_break
-        log += indent + 'children:' + str(self.children) + line_break
+        log += indent + 'children:' + str(len(self.children)) + line_break
         return log
     
     # log string recursively (find children nodes to log)
@@ -268,7 +268,7 @@ class DTree:
         # => we pick the smallest col_entr in the list
         #=======================================
         min_entr_col_indx = col_entropies.index(min(col_entropies))
-        node.update(min_entr_col_indx, tmp_type[min_entr_col_indx], tmp_cond[min_entr_col_indx])
+        node.update(input_cols[min_entr_col_indx], tmp_type[min_entr_col_indx], tmp_cond[min_entr_col_indx])
 
         print('min_entr_col_indx:', min_entr_col_indx)
         print('old_input_cols: ',input_cols)
