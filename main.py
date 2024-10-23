@@ -24,19 +24,19 @@ tree = dt.DTree(data)
 rows = list(range(0, len(data)))
 cols = list(range(0, len(data[0])))
 #cols = [-1]
-print(tree.getEntropies(rows, cols))
-print(tree.balanceSegment())
-print(tree.getEntropies(rows, cols))
+#print(tree.getEntropies(rows, cols))
+#print(tree.balanceSegment())
+#print(tree.getEntropies(rows, cols))
 tree.train(rows, cols[:-1])
 
 saveToTxt(tree.log(), 'log/DTree.txt')
 pred = [tree.query(i) for i in data]
 saveToTxt('\n'.join(pred), 'log/pred.txt')
-print(pred)
+#print(pred)
 
 count = 0
 for i in range(len(data_t[-1])):
-    print(data_t[-1][i] + '|' + pred[i])
+    print(pred[i] + '|' + data_t[-1][i])
     if data_t[-1][i] == pred[i]:
         count += 1
 print(count/len(pred))

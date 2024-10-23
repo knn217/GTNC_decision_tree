@@ -318,9 +318,9 @@ class DTree:
             node.children.append(child)   # add child node to current node
             #print('rows',i)
             if len(i) == 0:
-                print('tmp_output: ', tmp_output)
+                #print('tmp_output: ', tmp_output)
                 result = max(tmp_output,key=tmp_output.count)
-                print('result: ', result)
+                #print('result: ', result)
                 child.update(self.dataset_output_idx, type='result', conditions=result)
                 continue
             self.train(i, new_input_cols, child)
