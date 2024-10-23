@@ -42,7 +42,7 @@ def findRange(arr, low, high):
     # output: [2, 3]
     index = []
     for i in range(0, len(arr)):
-        if arr[i] > low and arr[i] <= high:
+        if low < arr[i] and arr[i] <= high:
             index.append(i)
     return index
 
@@ -174,9 +174,29 @@ class DTreeNode:
             log += child.log(line_break, indent + '    ')
         return log
         
-    def discreteBranch(self, value):
-        
-        return
+    def discreteBranch(self, record):
+        value = record[self.col]
+        for i in range(len(self.conditions)):
+            if self.conditions[i] == value:
+                return self.children[i]
+        return None
+    
+    def continuousBranch(self, record):
+        value = record[self.col]
+        for i in range(len(self.conditions)-1):
+            if self.conditions[i] < value and value < self.conditions[i+1]:
+                return self.children[i]
+        return None
+    
+    def branch(self, record):
+        value = record[self.col]
+        if self.type == 'result':
+            return self.conditions
+        elif self.type == 'discrete':
+            return self.discreteBranch(value)
+        elif self.type == 'continuous':
+            return self.continuousBranch(value)
+        return None
     
 class DTree:
     def __init__(self, dataset):
@@ -289,3 +309,7 @@ class DTree:
             #print(i)
         return
         
+    def query(self, record):
+        node = self.root_node
+        
+        return
