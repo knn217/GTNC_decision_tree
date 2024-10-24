@@ -267,6 +267,18 @@ class DTree:
         sub_dataset_t = transpose(sub_dataset)
         #sub_dataset_t = [sub_dataset_t[i] for i in input_cols] # get all the attribute(cols) for input
         tmp_data = [sub_dataset_t[i] for i in input_cols]
+        tmp_cond = [self.conditions[i] for i in input_cols]
+        tmp_type = [self.datatype[i] for i in input_cols]
+        # create the list of list of indexes for each branch
+        L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type = tmp_type[i]) for i in range(len(tmp_data))]
+        return L_L_Idx
+    
+    # create the list of list of indexes for each branch
+    def L_L_Idx_V2(self, rows, input_cols):
+        sub_dataset = [self.dataset[i] for i in rows] # get the sub dataset from indices(rows)
+        sub_dataset_t = transpose(sub_dataset)
+        #sub_dataset_t = [sub_dataset_t[i] for i in input_cols] # get all the attribute(cols) for input
+        tmp_data = [sub_dataset_t[i] for i in input_cols]
         //TODO tmp_cond = [self.conditions[i] for i in input_cols]
         tmp_type = [self.datatype[i] for i in input_cols]
         # create the list of list of indexes for each branch
