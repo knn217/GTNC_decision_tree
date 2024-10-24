@@ -46,7 +46,7 @@ def findRange(arr, low, high):
             index.append(i)
     return index
 
-def attrBranchDivider(attr, attr_branches, type='discrete', seg=1):
+def attrBranchDivider(attr, attr_branches, type='discrete'):
     # combine findMatch and findRange and use branches as input
     # example: 
     # input: ([3, 4, 2, 6, 6, 4, 4, 2, 3], {2, 3, 4, 6}, type = 'discrete')
@@ -219,12 +219,6 @@ class DTree:
         sub_dataset_t = transpose(sub_dataset)
         sub_dataset_t = [sub_dataset_t[i] for i in output_cols]
         #print(sub_dataset_t)
-#        if seg < 1: # shouldn't calculate entropy for continuous if seg < 1
-#            sub_dataset_t = [i for i in sub_dataset_t if not (isinstance(i[0], int) or isinstance(i[0], float))] # filter int and float lists
-#            #print(sub_dataset_t)
-#            entropies = [entropy(i, extractBranch(i)) for i in sub_dataset_t]
-#            return entropies
-#            pass
         # determine each column data is discrete or continuous for calculating entropy
         entropies = [entropy(sub_dataset_t[i], self.conditions[i], self.datatype[i]) for i in range(len(sub_dataset_t))]
         return entropies
@@ -235,15 +229,37 @@ class DTree:
         #print(branch_num_list)
         self.seg = len(self.dataset)
         c_attr = 0
-        print(branch_num_list)
+        print('branch_num_list: ', branch_num_list)
         for i in range(len(branch_num_list)-1):
             if branch_num_list[i] != 0: self.seg /= branch_num_list[i]
             else: c_attr += 1 
         balance_seg = math.ceil(self.seg ** (1/c_attr))
         self.seg = [balance_seg if i==0 else i for i in branch_num_list]
+        print('seg: ', self.seg)
         # Update the conditions after updating seg
         self.conditions = [convertBranch(extractBranch(self.dataset_t[i]), self.seg[i]) for i in range(len(self.dataset_t))]
-        return self.seg
+        return
+    
+    # calculate weighted segment for continuous attributes
+    # Note that this function return conditions based on it's input dataset rows
+    def weightedSegment(self, rows):
+        # dataset is in rows and dataset_t is in columns
+        dataset = [self.dataset[i] for i in rows]
+        dataset_t = transpose(dataset)
+        branch_num_list = [0 if (isinstance(i[0], int) or isinstance(i[0], float)) else len(extractBranch(i)) for i in dataset_t]
+        #print(branch_num_list)
+        seg = len(dataset)
+        c_attr = 0
+        print('branch_num_list: ', branch_num_list)
+        for i in range(len(branch_num_list)-1):
+            if branch_num_list[i] != 0: seg /= branch_num_list[i]
+            else: c_attr += 1 
+        balance_seg = math.ceil(seg ** (1/c_attr))
+        seg = [balance_seg if i==0 else i for i in branch_num_list]
+        print('seg: ', seg)
+        # Update the conditions after updating seg
+        conditions = [convertBranch(extractBranch(dataset_t[i]), seg[i]) for i in range(len(dataset_t))]
+        return conditions
     
     # create the list of list of indexes for each branch
     def L_L_Idx(self, rows, input_cols):
@@ -251,7 +267,7 @@ class DTree:
         sub_dataset_t = transpose(sub_dataset)
         #sub_dataset_t = [sub_dataset_t[i] for i in input_cols] # get all the attribute(cols) for input
         tmp_data = [sub_dataset_t[i] for i in input_cols]
-        tmp_cond = [self.conditions[i] for i in input_cols]
+        //TODO tmp_cond = [self.conditions[i] for i in input_cols]
         tmp_type = [self.datatype[i] for i in input_cols]
         # create the list of list of indexes for each branch
         L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type = tmp_type[i]) for i in range(len(tmp_data))]
@@ -271,8 +287,11 @@ class DTree:
     
     # recursive train
     def train(self, rows, input_cols, node = None):
-        tmp_output = extractIndx(self.dataset_output, rows)
-        # base cases
+        # rows: the records(rows) that this node is built on
+        # input_cols: the columns left for this node to find entropies
+        tmp_output = extractIndx(self.dataset_output, rows) # extract the outputs that this node needs
+        #===================================================================
+        # [1] base cases
         if len(input_cols) == 0: # if there's only no input column then output column as node's condition
             if len(tmp_output) == 0:
                 node = None
@@ -286,11 +305,16 @@ class DTree:
         if out_entr == 0:
             return
         #print('out_entr: ', out_entr)
+        
+        #===================================================================
+        # [2] handle root node
         if node == None:
             node = DTreeNode(rows)
-            self.root_node = node        
-        # create the list of list of indexes for each branch
-        L_L_Idx = self.L_L_Idx(rows, input_cols)
+            self.root_node = node
+        
+        #===================================================================    
+        # [3] Find the Entropies for each attr (column) 
+        L_L_Idx = self.L_L_Idx(rows, input_cols) # (list of indexes for each branch) in each attr (collumn)
         #print('L_L_Idx: ', L_L_Idx)
         col_entropies = [sum([entropy(extractIndx(self.dataset_output, each_attr_idx[i]), out_cond) for i in range(len(each_attr_idx))]) for each_attr_idx in L_L_Idx]
         #print('col_entropies: ', col_entropies)
@@ -299,16 +323,19 @@ class DTree:
         # this is equivalent to minimizing attribute (column) entropy
         # => we pick the smallest col_entr in the list
         #=======================================
+        
+        # [4] Pick the lowest entr column for current node and add information to it
         tmp_cond = [self.conditions[i] for i in input_cols]
         tmp_type = [self.datatype[i] for i in input_cols]
-        #print('tmp_data:', tmp_data)
-        #print('tmp_cond:', tmp_cond)
-        #print('tmp_type:', tmp_type)
+        print('tmp_cond:', tmp_cond)
+        print('tmp_type:', tmp_type)
         
         min_entr_col_indx = col_entropies.index(min(col_entropies))
+        print('min_entr_col_indx:', min_entr_col_indx)
         node.update(input_cols[min_entr_col_indx], type=tmp_type[min_entr_col_indx], conditions=tmp_cond[min_entr_col_indx])
 
-        #print('min_entr_col_indx:', min_entr_col_indx)
+        #===================================================================
+        # [5] Create children for current node and train them recursively
         #print('old_input_cols: ',input_cols)
         new_input_cols = [i for i in input_cols if i != input_cols[min_entr_col_indx]]
         #input_cols.remove(input_cols[min_entr_col_indx])
