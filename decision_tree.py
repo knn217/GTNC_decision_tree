@@ -329,14 +329,15 @@ class DTree:
         L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type=tmp_type[i]) for i in range(len(tmp_data))]
         return L_L_Idx, tmp_data, tmp_cond, tmp_type
     
+    # postproccessing for emty children
     def postProccessChildren(self, node):
         max_occur = -1
         max_occur_result = ''
         for child in node.children:
             if len(child.rows) > max_occur and isinstance(child.conditions, str):
-                max_occur == len(child.rows)
+                max_occur == len(child.rows) # find the max occured child
                 max_occur_result = child.conditions
-        for child in node.children:
+        for child in node.children: # copy the max occur child's result to the empty children
             if len(child.rows) == 0:
                 child.conditions = max_occur_result
         return
@@ -408,7 +409,7 @@ class DTree:
             self.train(i, new_input_cols, child)
             #print(i)
         # post proccess
-        self.postProccessChildren(node)
+        #self.postProccessChildren(node)
         return
         
     def query(self, record):
