@@ -44,8 +44,8 @@ def extractCSV(txt, filter=[]):
         data.append([smartParse(i) for i in line_data])
     return data[1:]
 
-def extractData():
-    dir_drug = getDir('drug200.csv')
+def extractData(file_name):
+    dir_drug = getDir(file_name)
     data_drug = open(dir_drug, encoding='utf8')
     data_drug = extractCSV(data_drug) # pop filter from last to 1st
     #for i in data_drug:

@@ -9,6 +9,9 @@ def extractBranch(attr):
     branches = sorted(list(set(attr)))
     return branches
 
+def addInfinite(arr):
+    return [float('-inf')] + arr + [float('inf')]
+
 def convertBranch(continuous_branch, seg=1):
     # turn continuous to discrete branches of range (for int and float)
     # example: 
@@ -22,7 +25,7 @@ def convertBranch(continuous_branch, seg=1):
     dicrete_branches = []
     for i in range(1, seg):
         dicrete_branches.append(i/seg * (temp) + min_val)
-    return [float('-inf')] + dicrete_branches + [float('inf')]
+    return addInfinite(dicrete_branches)
 
 def findMatch(arr, match):
     # get the indices in array that match a value
@@ -97,7 +100,7 @@ def percentage(attr, attr_branches, type='discrete'):
     p_list = [i / s for i in p_list]
     return p_list
 
-def entropy(attr, attr_branches, type='discrete', z = 0.001):
+def entropy(attr, attr_branches, type='discrete', z = 0.00001):
     # calculate the entropy of a column
     # example: 
     # input: ([3, 4, 2, 6, 6, 4, 4, 2, 3], {2, 3, 4, 6}, type = 'discrete')
@@ -110,7 +113,7 @@ def entropy(attr, attr_branches, type='discrete', z = 0.001):
     entr = [-(i+z) * math.log(i+z, 2) for i in p]
     return sum(entr)
 
-def gini(attr, attr_branches, type='discrete', z = 0.001):
+def gini(attr, attr_branches, type='discrete', z = 0.00001):
     # calculate the gini of a column
     # example: 
     # input: ([3, 4, 2, 6, 6, 4, 4, 2, 3], {2, 3, 4, 6}, type = 'discrete')
@@ -130,6 +133,46 @@ def extractIndx(arr, indices):
     extr = [arr[i] for i in indices]
     #print(extr)
     return extr
+
+# find the median index for a value in array
+def median_idx(arr, val, _sorted=False):
+    if len(arr) == 0:
+        return None
+    if not _sorted: # sort arr based on arr
+        arr = sorted(arr)
+    first_idx = arr.index(val)
+    last_idx = arr[::-1].index(val)
+    return int((first_idx + last_idx) / 2)
+
+# find the binary segment that have the lowest entr
+def binaryWeightedSegment(attr, output):
+    min_entr_seg_val = None
+    min_entr = float('inf')
+    out_cond = list(set(output))
+    for i in set(attr): # turn into set to remove duplicates
+        attr_indx = attrBranchDivider(attr, addInfinite([i]), type='continuous')
+        entr = sum([entropy(extractIndx(output, attr_indx[i]), out_cond) for i in range(len(attr_indx))])
+        if entr <= min_entr:
+            min_entr = entr
+            min_entr_seg_val = i
+    return min_entr_seg_val
+
+def recursWeightedSegment(attr, output, seg_pow_lim=1, _sorted=False):
+    # base case: 
+    if seg_pow_lim == 0 or len(attr) ==0:
+        return []
+    # recurs:
+    if not _sorted: # sort attr and output based on attr
+        output = [o for _,o in sorted(zip(attr,output))]
+        attr = sorted(attr)
+        _sorted = True
+    min_entr_seg_val = binaryWeightedSegment(attr, output) # find min entropy sement value for attr
+    med_idx = median_idx(attr, min_entr_seg_val, _sorted=_sorted) # find median index for this value in sorted attr
+    left_seg = recursWeightedSegment(attr[:med_idx], output[:med_idx], seg_pow_lim=seg_pow_lim-1, _sorted=_sorted)
+    right_seg = recursWeightedSegment(attr[med_idx:], output[med_idx:], seg_pow_lim=seg_pow_lim-1, _sorted=_sorted)
+    
+    return left_seg + [min_entr_seg_val] + right_seg
+    
 
 class DTreeNode:
     count = 0
@@ -182,7 +225,7 @@ class DTreeNode:
     
     def continuousBranch(self, value):
         for i in range(len(self.conditions)-1):
-            if self.conditions[i] < value and value < self.conditions[i+1]:
+            if self.conditions[i] < value and value <= self.conditions[i+1]:
                 return self.children[i]
         return None
     
@@ -206,8 +249,8 @@ class DTree:
         self.seg = [1] * len(self.dataset_t)
         self.conditions = [convertBranch(extractBranch(self.dataset_t[i]), self.seg[i]) for i in range(len(self.dataset_t))]
         self.datatype = ['continuous' if (isinstance(i[0], int) or isinstance(i[0], float)) else 'discrete' for i in self.dataset_t]
-        print(self.conditions)
-        print(self.datatype)
+        #print(self.conditions)
+        #print(self.datatype)
         return
     
     def log(self):
@@ -229,13 +272,13 @@ class DTree:
         #print(branch_num_list)
         self.seg = len(self.dataset)
         c_attr = 0
-        print('branch_num_list: ', branch_num_list)
+        #print('branch_num_list: ', branch_num_list)
         for i in range(len(branch_num_list)-1):
             if branch_num_list[i] != 0: self.seg /= branch_num_list[i]
             else: c_attr += 1 
         balance_seg = math.ceil(self.seg ** (1/c_attr))
         self.seg = [balance_seg if i==0 else i for i in branch_num_list]
-        print('seg: ', self.seg)
+        #print('seg: ', self.seg)
         # Update the conditions after updating seg
         self.conditions = [convertBranch(extractBranch(self.dataset_t[i]), self.seg[i]) for i in range(len(self.dataset_t))]
         return
@@ -250,19 +293,19 @@ class DTree:
         #print(branch_num_list)
         seg = len(dataset)
         c_attr = 0
-        print('branch_num_list: ', branch_num_list)
+        #print('branch_num_list: ', branch_num_list)
         for i in range(len(branch_num_list)-1):
             if branch_num_list[i] != 0: seg /= branch_num_list[i]
             else: c_attr += 1 
         balance_seg = math.ceil(seg ** (1/c_attr))
         seg = [balance_seg if i==0 else i for i in branch_num_list]
-        print('seg: ', seg)
+        #print('seg: ', seg)
         # Update the conditions after updating seg
         conditions = [convertBranch(extractBranch(dataset_t[i]), seg[i]) for i in range(len(dataset_t))]
         return conditions
     
     # create the list of list of indexes for each branch
-    def L_L_Idx(self, rows, input_cols):
+    def L_L_Idx(self, rows, input_cols, seg_pow_lim=1):
         sub_dataset = [self.dataset[i] for i in rows] # get the sub dataset from indices(rows)
         sub_dataset_t = transpose(sub_dataset)
         #sub_dataset_t = [sub_dataset_t[i] for i in input_cols] # get all the attribute(cols) for input
@@ -270,20 +313,21 @@ class DTree:
         tmp_cond = [self.conditions[i] for i in input_cols]
         tmp_type = [self.datatype[i] for i in input_cols]
         # create the list of list of indexes for each branch
-        L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type = tmp_type[i]) for i in range(len(tmp_data))]
-        return L_L_Idx
+        L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type=tmp_type[i]) for i in range(len(tmp_data))]
+        return L_L_Idx, tmp_data, tmp_cond, tmp_type
     
     # create the list of list of indexes for each branch
-    def L_L_Idx_V2(self, rows, input_cols):
+    def L_L_Idx_V2(self, rows, input_cols, seg_pow_lim=1):
         sub_dataset = [self.dataset[i] for i in rows] # get the sub dataset from indices(rows)
         sub_dataset_t = transpose(sub_dataset)
         #sub_dataset_t = [sub_dataset_t[i] for i in input_cols] # get all the attribute(cols) for input
         tmp_data = [sub_dataset_t[i] for i in input_cols]
-        //TODO tmp_cond = [self.conditions[i] for i in input_cols]
+        tmp_cond = [self.conditions[i] if self.datatype[i] == 'discrete' else addInfinite(recursWeightedSegment(sub_dataset_t[i], sub_dataset_t[-1], seg_pow_lim=seg_pow_lim, _sorted=False)) for i in input_cols]
+        #print('tmp_cond:', tmp_cond)
         tmp_type = [self.datatype[i] for i in input_cols]
         # create the list of list of indexes for each branch
-        L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type = tmp_type[i]) for i in range(len(tmp_data))]
-        return L_L_Idx
+        L_L_Idx = [attrBranchDivider(tmp_data[i], tmp_cond[i], type=tmp_type[i]) for i in range(len(tmp_data))]
+        return L_L_Idx, tmp_data, tmp_cond, tmp_type
     
     def postProccessChildren(self, node):
         max_occur = -1
@@ -326,7 +370,7 @@ class DTree:
         
         #===================================================================    
         # [3] Find the Entropies for each attr (column) 
-        L_L_Idx = self.L_L_Idx(rows, input_cols) # (list of indexes for each branch) in each attr (collumn)
+        L_L_Idx, tmp_data, tmp_cond, tmp_type = self.L_L_Idx_V2(rows, input_cols, seg_pow_lim=1) # (list of indexes for each branch) in each attr (collumn)
         #print('L_L_Idx: ', L_L_Idx)
         col_entropies = [sum([entropy(extractIndx(self.dataset_output, each_attr_idx[i]), out_cond) for i in range(len(each_attr_idx))]) for each_attr_idx in L_L_Idx]
         #print('col_entropies: ', col_entropies)
@@ -337,13 +381,12 @@ class DTree:
         #=======================================
         
         # [4] Pick the lowest entr column for current node and add information to it
-        tmp_cond = [self.conditions[i] for i in input_cols]
-        tmp_type = [self.datatype[i] for i in input_cols]
-        print('tmp_cond:', tmp_cond)
-        print('tmp_type:', tmp_type)
-        
+        #tmp_cond = [self.conditions[i] for i in input_cols]
+        #tmp_type = [self.datatype[i] for i in input_cols]
+        #print('tmp_cond:', tmp_cond)
+        #print('tmp_type:', tmp_type)
         min_entr_col_indx = col_entropies.index(min(col_entropies))
-        print('min_entr_col_indx:', min_entr_col_indx)
+        #print('min_entr_col_indx:', min_entr_col_indx)
         node.update(input_cols[min_entr_col_indx], type=tmp_type[min_entr_col_indx], conditions=tmp_cond[min_entr_col_indx])
 
         #===================================================================
@@ -370,6 +413,8 @@ class DTree:
         
     def query(self, record):
         node = self.root_node
+        #print(record)
         while node.type != 'result':
+            #print(node.conditions)
             node = node.branch(record)
         return node.conditions

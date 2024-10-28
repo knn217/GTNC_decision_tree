@@ -9,10 +9,10 @@ def saveToTxt(data, name):
             f.write(line)
     return
 
-data = extractData()
+data = extractData('data.csv')
 data_t = transpose(data)
-#data_t = data_t[2:] + [data_t[1]]
-#data = transpose(data_t)
+data_t = data_t[2:] + [data_t[1]]
+data = transpose(data_t)
 
 #print(data_t)
 #print(data)
