@@ -1,6 +1,7 @@
 from extract import extractData, transpose, getDir
 import decision_tree as dt
-from test_1 import saveToTxt, train_test_split
+from test_1 import saveToTxt, train_test_split, accuracy, confusion_score
+import numpy as np
 
 if __name__ == "__main__":
     data = extractData('drug200.csv')
@@ -32,3 +33,16 @@ if __name__ == "__main__":
         if y_test[i] == pred[i]:
             count += 1
     print(count/len(pred))
+    
+    pred = np.asarray(pred)
+    y_test = np.asarray(y_test)
+    print("--- Our Model (DT) ---")
+    print(f"Model's Accuracy: {accuracy(y_test, pred)}")
+    precision, recall, f1_score = confusion_score(y_test, pred, "macro")
+    print(f"Model's F1 (Macro): {f1_score}")
+    print(f"Model's Precision (Macro): {precision}")
+    print(f"Model's Recall (Macro): {recall}")
+    precision, recall, f1_score = confusion_score(y_test, pred, "micro")
+    print(f"Model's F1 (Micro): {f1_score}")
+    print(f"Model's Precision (Micro): {precision}")
+    print(f"Model's Recall (Micro): {recall}")
