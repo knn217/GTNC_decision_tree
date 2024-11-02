@@ -12,7 +12,7 @@ if __name__ == "__main__":
     test = transpose(transpose(X_test) + [y_test])
     output = data_t[-1]
     
-    print(train)
+    #print(train)
     
     tree = dt.DTree(train)
     rows = list(range(0, len(train)))
@@ -28,11 +28,11 @@ if __name__ == "__main__":
     #print(pred)
     
     count = 0
-    for i in range(len(y_test)):
-        print(str(pred[i]) + '|' + str(y_test[i]))
-        if y_test[i] == pred[i]:
-            count += 1
-    print(count/len(pred))
+    #for i in range(len(y_test)):
+    #    print(str(pred[i]) + '|' + str(y_test[i]))
+    #    if y_test[i] == pred[i]:
+    #        count += 1
+    #print(count/len(pred))
     
     pred = np.asarray(pred)
     y_test = np.asarray(y_test)

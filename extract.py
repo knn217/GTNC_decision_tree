@@ -50,8 +50,8 @@ def extractData(file_name):
     data_drug = extractCSV(data_drug) # pop filter from last to 1st
     #for i in data_drug:
     #    print(i)
-    print('Number of drug: ', len(data_drug))
-    saveToTxt(data_drug, 'log/drug.txt') # save to log
+    print('Samples number: ', len(data_drug))
+    #saveToTxt(data_drug, 'log/drug.txt') # save to log
     
     #print(transpose(data_drug))
     
